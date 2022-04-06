@@ -1,6 +1,8 @@
-from steamship.data.embedding import EmbedRequest
 from steamship.plugin.service import PluginRequest
+from steamship.plugin.inputs.block_and_tag_plugin_input import BlockAndTagPluginInput
 from src.api import EmbedderPlugin
+from steamship.data.block import Block
+from steamship.data.file import File
 
 import os
 from typing import List
@@ -8,10 +10,10 @@ from typing import List
 __copyright__ = "Steamship"
 __license__ = "MIT"
 
-def _get_test_facts() -> List[str]:
+def _get_test_facts() -> List[Block]:
     folder = os.path.dirname(os.path.abspath(__file__))
     with open(os.path.join(folder, '..', 'test_data', 'facts.txt'), 'r') as f:
-        return f.read().split("\n")
+        return list(map(lambda text: Block(text=text), f.read().split("\n")))
 
 def dist(e1: List[float], e2: List[float]) -> float:
     """A very simplistic vector distance calculation: sum element-wise deviation. Lower means more similar."""
@@ -38,7 +40,8 @@ def test_embedder():
     embedder = EmbedderPlugin()
 
     facts = _get_test_facts()
-    response = embedder.run(PluginRequest(data=EmbedRequest(plugin=None, docs=facts)))
+    request = PluginRequest(data=BlockAndTagPluginInput(file=File(blocks=facts)))
+    response = embedder.run(request)
     assert(response.error is None)
     assert(response.data is not None)
 
@@ -52,7 +55,10 @@ def test_embedder():
     ]
 
     for test in tests:
-        query_response = embedder.run(PluginRequest(data=EmbedRequest(plugin=None, docs=[test[0]])))
+
+        request = PluginRequest(data=BlockAndTagPluginInput(file=File(blocks=[Block(text=test[0])])))
+        query_response = embedder.run(request)
+
         assert (query_response.error is None)
         assert (query_response.data is not None)
         assert (query_response.data.embeddings is not None)
@@ -62,5 +68,5 @@ def test_embedder():
         idx = search(embeddings, query)
         assert(idx >= 0)
         assert(idx < len(facts))
-        assert(facts[idx] == test[1])
+        assert(facts[idx].text == test[1])
 
