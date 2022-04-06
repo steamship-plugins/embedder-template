@@ -5,12 +5,14 @@ meaning in some abstract space.
 
 """
 
-from steamship import SteamshipError
-from steamship.app import App, post, create_handler, Response
-from steamship.data.embedding import EmbedResponse, EmbedRequest
-from steamship.plugin.embedder import Embedder
-from steamship.plugin.service import PluginResponse, PluginRequest
 from typing import List
+from steamship.app import App, Response, post, create_handler
+from steamship.plugin.service import PluginResponse, PluginRequest
+from steamship.base.error import SteamshipError
+from steamship.plugin.inputs.block_and_tag_plugin_input import BlockAndTagPluginInput
+from steamship.plugin.outputs.embedded_items_plugin_output import EmbeddedItemsPluginOutput
+from steamship.plugin.embedder import Embedder
+
 
 FEATURES = ["employee", "roses", "run", "bike", "ted", "grace", "violets", "sugar", "sweet", "cake",
             "flour", "chocolate", "vanilla", "flavors", "flavor", "can", "armadillo", "pizza",
@@ -28,7 +30,7 @@ def _embed(s: str) -> List[float]:
 class EmbedderPlugin(Embedder, App):
     """"Example Steamship Embedder plugin."""
 
-    def run(self, request: PluginRequest[EmbedRequest] = None) -> PluginResponse[EmbedResponse]:
+    def run(self, request: PluginRequest[BlockAndTagPluginInput] = None) -> PluginResponse[EmbeddedItemsPluginOutput]:
         """Every plugin implements a `run` function.
 
         This template plugin does an extremely simple form of embedding by returning a
@@ -40,9 +42,15 @@ class EmbedderPlugin(Embedder, App):
         """
         if request is None:
             return Response(error=SteamshipError(message="Missing request"))
+        if request.data is None:
+            return Response(error=SteamshipError(message="Missing data in request"))
+        if request.data.file is None:
+            return Response(error=SteamshipError(message="Missing file in request data"))
+        if request.data.file.blocks is None:
+            return Response(error=SteamshipError(message="Missing blocks in request data"))
 
-        embeddings = list(map(lambda s: _embed(s), request.data.docs))
-        return PluginResponse(data=EmbedResponse(embeddings=embeddings))
+        embeddings = list(map(lambda s: _embed(s.text), request.data.file.blocks))
+        return PluginResponse(data=EmbeddedItemsPluginOutput(embeddings=embeddings))
 
     @post('/embed')
     def embed(self, **kwargs) -> Response:
