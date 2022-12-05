@@ -66,5 +66,3 @@ class EmbedderPlugin(Embedder, App):
         response_dict = Embedder.response_to_dict(response)
         return Response(json=response_dict)
 
-
-handler = create_handler(EmbedderPlugin)
