@@ -6,7 +6,7 @@ meaning in some abstract space.
 """
 
 from typing import List
-from steamship.app import App, Response, post, create_handler
+from steamship.app import App, Response, post
 from steamship.plugin.service import PluginResponse, PluginRequest
 from steamship.base.error import SteamshipError
 from steamship.plugin.inputs.block_and_tag_plugin_input import BlockAndTagPluginInput
